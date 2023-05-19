@@ -6,21 +6,19 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from . import schemas, database, models
-# SECTER_KEY
-# ALGORITHM 
-# expiration time of token
+from .config import settings
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl= 'login')
 
-
-SECRET_KEY = "d0f51a97e7b12a0f2d00b3cee0b8459116ba416c7031d0f78f9ed40485577660"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTER = 60
+SECRET_KEY = settings.secret_key 
+ALGORITHM = settings.algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expiration = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTER)
+    expiration = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expiration})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -29,10 +27,10 @@ def create_access_token(data: dict):
 def verifyt_access_token(token: str, crediantials_exception):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        id: str = payload.get("user_id")
-        if not id:
+        user_id: str = payload.get("user_id")
+        if not user_id:
             raise crediantials_exception
-        token_data = schemas.TokenData(id = id)
+        token_data = schemas.TokenData(id = user_id)
     except JWTError:
         raise crediantials_exception
 
@@ -41,7 +39,7 @@ def verifyt_access_token(token: str, crediantials_exception):
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
     credentials_exception = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, 
-                                          detail = f"could not validate credentials",
+                                          detail = "could not validate credentials",
                                           headers={"WWW-Authenticate": "Bearer"})
 
     token = verifyt_access_token(token, credentials_exception)
