@@ -51,7 +51,7 @@ class PostOut(BaseModel):
         orm_mode = True
 
 class Token(BaseModel):
-    accees_token: str
+    access_token: str
     token_type: str
 
 class TokenData(BaseModel):
